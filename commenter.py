@@ -2,6 +2,7 @@ import requests
 import time
 import random
 from config import DELAY_BETWEEN_COMMENTS
+from response_generator import generate_naija_response  
 
 def post_comment(video_id, comment_text, session_id):
     """
