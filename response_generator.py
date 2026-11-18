@@ -1,6 +1,7 @@
 import os
+import random
 from openai import OpenAI
-
+import config
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_naija_response(comment_text, author_username):
