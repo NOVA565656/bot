@@ -1,6 +1,7 @@
 import asyncio
 import schedule
 import time
+import random 
 from datetime import datetime
 from scraper import get_niche_videos, get_video_comments
 from analyzer import extract_potential_leads
