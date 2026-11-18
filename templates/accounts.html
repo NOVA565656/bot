@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Accounts</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #0f0f0f; 
+            color: #fff;
+            padding: 20px;
+        }
+        .back { color: #fe2c55; text-decoration: none; margin-bottom: 20px; display: block; }
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: #fe2c55;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn-secondary { background: #2c2c2c; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #2c2c2c; color: white; }
+        .account-item {
+            background: #2c2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .instructions {
+            background: #1a3a1a;
+            border: 1px solid #4a4;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back">← Back</a>
+    <h1>👤 Accounts</h1>
+    
+    <div class="instructions">
+        <strong>How to get cookies:</strong><br>
+        1. Open TikTok in Chrome<br>
+        2. Login to your account<br>
+        3. Go to Settings → Privacy → Cookies<br>
+        4. Find "sessionid" and copy value<br>
+        5. Paste below
+    </div>
+    
+    <div class="card">
+        <h3>Add New Account</h3>
+        <input type="text" id="accName" placeholder="Account Name (e.g., Account 1)">
+        <input type="text" id="accUser" placeholder="TikTok Username">
+        <input type="text" id="accSession" placeholder="Session ID Cookie">
+        <button class="btn" onclick="addAccount()">Save Account</button>
+    </div>
+    
+    <div class="card">
+        <h3>Saved Accounts</h3>
+        {% for acc in accounts %}
+        <div class="account-item">
+            <div>
+                <strong>{{ acc.name }}</strong><br>
+                <small>@{{ acc.username }}</small>
+            </div>
+            <button class="btn btn-secondary" style="width: auto; padding: 8px 15px;" onclick="deleteAccount({{ acc.id }})">Delete</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        async function addAccount() {
+            const data = {
+                name: document.getElementById('accName').value,
+                username: document.getElementById('accUser').value,
+                session_id: document.getElementById('accSession').value
+            };
+            
+            await fetch('/api/account', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            alert('Account saved!');
+            location.reload();
+        }
+        
+        async function deleteAccount(id) {
+            if(confirm('Delete this account?')) {
+                await fetch('/api/account/' + id, {method: 'DELETE'});
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
