@@ -1,23 +1,15 @@
 name: Build APK with Buildozer
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  disabled:
+    if: false
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Build with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
-      with:
-        workdir: .
-        buildozer_version: stable
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: apk
-        path: ./bin/*.apk
+      - name: Buildozer workflow intentionally disabled
+        run: echo "The Buildozer workflow is disabled because its current action is incompatible with the runner."
