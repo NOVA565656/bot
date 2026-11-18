@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install briefcase
+        pip install -r requirements.txt
+    
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v2
+    
+    - name: Build Android App
+      run: |
+        briefcase create android
+        briefcase build android
+    
+    - name: Package APK
+      run: |
+        briefcase package android --adhoc-sign
+        mkdir -p output
+        cp android/gradle/app/build/outputs/apk/debug/app-debug.apk output/tiktok-bot.apk
+    
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tiktok-bot-apk
+        path: output/tiktok-bot.apk
+    
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: output/tiktok-bot.apk
+        tag_name: v1.0.${{ github.run_number }}
+        name: TikTok Bot APK v1.0.${{ github.run_number }}
+        body: |
+          ## TikTok Auto-DM Bot (Android APK)
+          
+          ### Download & Install:
+          1. Download `tiktok-bot.apk` below
+          2. On Android: Settings → Security → Enable "Unknown Sources"
+          3. Install the APK
+          4. Open app → Add your TikTok accounts → Start bot
+          
+          ### Note:
+          - First launch may take 30 seconds to initialize
+          - App runs local server on your phone
+          - Use Chrome to access dashboard at http://localhost:5000
+          - Or use the built-in WebView interface
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
