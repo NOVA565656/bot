@@ -1,0 +1,33 @@
+[build-system]
+requires = ["briefcase"]
+
+[tool.briefcase]
+project_name = "TikTok Bot"
+bundle = "com.nova.tiktokbot"
+version = "1.0.0"
+url = "https://github.com/NOVA565656/bot"
+license = "MIT"
+author = "NOVA565656"
+author_email = "your@email.com"
+
+[tool.briefcase.app.bot]
+formal_name = "TikTok Bot"
+description = "Auto-DM reply bot for TikTok"
+icon = "resources/bot"
+sources = ["."]
+requires = [
+    "flask>=2.0",
+    "flask-cors",
+    "openai",
+    "python-dotenv",
+    "requests",
+    "schedule",
+    "colorama",
+    "sqlite3",
+]
+
+[tool.briefcase.app.bot.android]
+template = "https://github.com/beeware/briefcase-android-gradle-template"
+build_gradle_dependencies = [
+    "com.google.android.material:material:1.4.0",
+]
