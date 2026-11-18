@@ -1,0 +1,6 @@
+TikTokApi
+openai
+python-dotenv
+requests
+schedule
+colorama
