@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Bot Manager</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #0f0f0f; 
+            color: #fff;
+            padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: #fe2c55;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .btn-secondary {
+            background: #2c2c2c;
+        }
+        .account-count {
+            font-size: 48px;
+            color: #fe2c55;
+            text-align: center;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2c2c2c;
+            color: white;
+        }
+        .test-result {
+            background: #2c2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 TikTok Bot</h1>
+        <p>Auto-DM Reply System</p>
+    </div>
+    
+    <div class="card">
+        <p>Active Accounts</p>
+        <div class="account-count">{{ accounts }}</div>
+        <button class="btn btn-secondary" onclick="location.href='/accounts'">
+            Manage Accounts
+        </button>
+    </div>
+    
+    <div class="card">
+        <h3>🧪 Test AI Reply</h3>
+        <input type="text" id="testAuthor" placeholder="@username" value="testuser">
+        <textarea id="testComment" placeholder="Enter sample comment..." rows="3">
+How can I start making money online?</textarea>
+        <button class="btn" onclick="testReply()">Generate Reply</button>
+        <div id="testResult" class="test-result"></div>
+    </div>
+    
+    <div class="card">
+        <h3>🚀 Bot Control</h3>
+        <button class="btn" onclick="startBot()">Start Bot</button>
+    </div>
+
+    <script>
+        async function testReply() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Generating...';
+            
+            const response = await fetch('/api/test-reply', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    comment: document.getElementById('testComment').value,
+                    author: document.getElementById('testAuthor').value
+                })
+            });
+            const data = await response.json();
+            resultDiv.innerHTML = '<strong>AI Reply:</strong><br>' + data.reply;
+        }
+        
+        async function startBot() {
+            await fetch('/api/start-bot', {method: 'POST'});
+            alert('Bot started! Check terminal.');
+        }
+    </script>
+</body>
+</html>
