@@ -1,4 +1,4 @@
-name: Build TikTok Bot
+name: Build TikTok Bot Package
 
 on:
   push:
@@ -12,31 +12,128 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
+    - name: Create Distribution Package
       run: |
-        pip install pyinstaller flask flask-cors
-        pip install -r requirements.txt
+        mkdir -p dist/tiktok-bot
+        cp -r *.py templates requirements.txt dist/tiktok-bot/
+        
+        # Create install script for Termux
+        cat > dist/tiktok-bot/install.sh << 'EOF'
+        #!/bin/bash
+        echo "🚀 TikTok Bot Installer"
+        
+        # Check if in Termux
+        if [ -z "$TERMUX_VERSION" ]; then
+            echo "⚠️  Warning: Not running in Termux"
+        fi
+        
+        # Install dependencies
+        pkg update -y
+        pkg install python python-pip git -y
+        
+        # Create virtual environment
+        python -m venv venv
+        source venv/bin/activate
+        
+        # Install Python packages
+        pip install --upgrade pip
+        pip install flask flask-cors TikTokApi openai python-dotenv requests schedule colorama playwright
+        
+        # Install browser
+        playwright install chromium
+        
+        # Create launcher
+        cat > start-bot.sh << 'LAUNCHER'
+        #!/bin/bash
+        source venv/bin/activate
+        echo "🤖 Starting TikTok Bot..."
+        echo "Open your browser and go to: http://localhost:5000"
+        python app.py
+        LAUNCHER
+        chmod +x start-bot.sh
+        
+        # Create database
+        python -c "import database; database.init_db()"
+        
+        echo "✅ Installation complete!"
+        echo ""
+        echo "To start the bot:"
+        echo "  ./start-bot.sh"
+        echo ""
+        echo "Or manually:"
+        echo "  source venv/bin/activate"
+        echo "  python app.py"
+        EOF
+        
+        chmod +x dist/tiktok-bot/install.sh
+        
+        # Create README for the package
+        cat > dist/tiktok-bot/README.txt << 'EOF'
+        TIKTOK BOT - Quick Start
+        ==========================
+        
+        1. Extract this folder:
+           unzip tiktok-bot.zip
+           cd tiktok-bot
+        
+        2. Run installer:
+           bash install.sh
+        
+        3. Start the bot:
+           ./start-bot.sh
+        
+        4. Open your phone browser:
+           http://localhost:5000
+        
+        ADDING ACCOUNTS:
+        - Go to http://localhost:5000/accounts
+        - Login to TikTok in Chrome
+        - Copy sessionid cookie
+        - Paste in the form
+        
+        MANUAL COOKIE EXTRACTION:
+        1. Open Chrome, go to tiktok.com
+        2. Login to your account
+        3. Press F12 → Application → Cookies
+        4. Find "sessionid" and copy value
+        5. Paste in the web dashboard
+        
+        TROUBLESHOOTING:
+        - If install fails, run: pkg install python -y
+        - If bot won't start, check: python app.py
+        EOF
+        
+        # Create the zip
+        cd dist
+        zip -r tiktok-bot.zip tiktok-bot/
     
-    - name: Build executable
-      run: |
-        pyinstaller --onefile --name tiktok-bot app.py
-    
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
       with:
         name: tiktok-bot
-        path: dist/tiktok-bot
+        path: dist/tiktok-bot.zip
     
     - name: Create Release
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/tiktok-bot
-        tag_name: v${{ github.run_number }}
+        files: dist/tiktok-bot.zip
+        tag_name: v1.0.${{ github.run_number }}
+        name: TikTok Bot v1.0.${{ github.run_number }}
+        body: |
+          ## TikTok Auto-DM Bot
+          
+          ### Download & Install:
+          1. Download `tiktok-bot.zip` below
+          2. Extract in Termux: `unzip tiktok-bot.zip`
+          3. Run: `cd tiktok-bot && bash install.sh`
+          4. Start: `./start-bot.sh`
+          
+          ### Features:
+          - Multi-account support
+          - AI-generated DM-focused replies
+          - Web dashboard (mobile-friendly)
+          - Nigerian Pidgin responses
+          - SQLite database for tracking
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
