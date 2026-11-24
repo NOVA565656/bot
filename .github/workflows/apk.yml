@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -18,19 +19,18 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 1. Use v4 and explicitly list packages to avoid the missing 'tools' error
-      - uses: android-actions/setup-android@v4
-        with:
-          packages: |
-            build-tools;33.0.2
-            platform-tools
-            platforms;android-33
+      # 1. Use the runner's pre-installed SDK to install ONLY the required packages.
+      #    This bypasses the broken 'setup-android' action completely.
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      # 2. Add build-tools directory to PATH so 'aidl' is globally available
+      # 2. Add the build-tools directory (where 'aidl' lives) to the PATH.
       - name: Add build-tools to PATH
-        run: echo "$ANDROID_SDK_ROOT/build-tools/33.0.2" >> $GITHUB_PATH
+        run: echo "$ANDROID_HOME/build-tools/33.0.2" >> $GITHUB_PATH
 
-      # 3. Verify aidl is correctly found
+      # 3. Verify that aidl is correctly found (should output a path and version).
       - name: Verify aidl
         run: which aidl && aidl --version
 
@@ -50,7 +50,7 @@ jobs:
           path: ~/.buildozer
           key: bz-${{ hashFiles('buildozer.spec') }}
 
-      # 4. Auto-accept licenses for Buildozer
+      # 4. Auto-accept licenses and build.
       - name: Build
         run: echo y | buildozer -v android debug
 
