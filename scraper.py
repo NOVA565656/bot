@@ -1,31 +1,46 @@
-from TikTokApi import TikTokApi
-import asyncio
+import requests
 import random
 
-async def get_niche_videos(keyword, count=10):
-    """Fetch videos related to side hustle niche"""
-    async with TikTokApi() as api:
-        videos = []
-        async for video in api.search.search_videos(keyword, count=count):
-            videos.append({
-                'id': video.id,
-                'author': video.author.username,
-                'desc': video.desc,
-                'comment_count': video.stats.comments
-            })
-        return videos
+BASE = "https://api16-normal-c-useast1a.tiktokv.com"
+UA = ("com.zhiliaoapp.musically/2022600030 (Linux; U; Android 12; en; "
+      "Pixel 5; Build/SQ3A.220705.004; Cronet/58.0.2991.0)")
 
-async def get_video_comments(video_id, max_comments=50):
-    """Fetch comments from a specific video"""
-    async with TikTokApi() as api:
-        comments = []
-        video = api.video(id=video_id)
-        
-        async for comment in video.comments(count=max_comments):
-            comments.append({
-                'comment_id': comment.id,
-                'text': comment.text,
-                'author': comment.author.username,
-                'likes': comment.likes_count
-            })
-        return comments
+def _h(session_id):
+    return {
+        "User-Agent": UA,
+        "Accept": "application/json",
+        "Cookie": f"sessionid={session_id}",
+    }
+
+def search_videos(keyword, session_id, count=10):
+    url = f"{BASE}/aweme/v1/general/search/single/"
+    p = {"keyword": keyword, "count": count, "offset": 0, "aid": 1128,
+         "version_code": "260103", "device_platform": "android"}
+    r = requests.get(url, params=p, headers=_h(session_id), timeout=20)
+    data = r.json().get("data") or []
+    out = []
+    for item in data:
+        a = item.get("aweme_info") or {}
+        if not a:
+            continue
+        out.append({
+            "id": a.get("aweme_id"),
+            "author": (a.get("author") or {}).get("unique_id", ""),
+            "desc": a.get("desc", ""),
+            "comment_count": (a.get("statistics") or {}).get("comment_count", 0),
+        })
+    return out
+
+def get_video_comments(video_id, session_id, max_comments=30):
+    url = f"{BASE}/aweme/v1/comment/list/"
+    p = {"aweme_id": video_id, "count": max_comments, "cursor": 0, "aid": 1128}
+    r = requests.get(url, params=p, headers=_h(session_id), timeout=20)
+    out = []
+    for c in (r.json().get("comments") or []):
+        out.append({
+            "comment_id": c.get("cid"),
+            "text": c.get("text", ""),
+            "author": (c.get("user") or {}).get("unique_id", ""),
+            "likes": c.get("digg_count", 0),
+        })
+    return out
