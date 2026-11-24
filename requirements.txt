@@ -1,6 +1,6 @@
-TikTokApi
+kivy
+requests
 openai
 python-dotenv
-requests
 schedule
 colorama
