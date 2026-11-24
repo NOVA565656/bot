@@ -19,6 +19,12 @@ jobs:
             cmake libffi-dev libssl-dev
       - name: Install buildozer
         run: pip install --user buildozer cython
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev aidl lib32stdc++6 lib32z1
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
