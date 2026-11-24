@@ -19,20 +19,29 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 1. Use the runner's pre-installed SDK to install ONLY the required packages.
-      #    This bypasses the broken 'setup-android' action completely.
+      # 1. Remove any conflicting system-wide aidl packages
+      - name: Remove system aidl packages
+        run: |
+          sudo apt-get remove -y aidl || true
+          sudo apt-get autoremove -y || true
+
+      # 2. Install the required Android SDK packages
       - name: Install Android SDK packages
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      # 2. Add the build-tools directory (where 'aidl' lives) to the PATH.
+      # 3. Add the build-tools directory to PATH
       - name: Add build-tools to PATH
         run: echo "$ANDROID_HOME/build-tools/33.0.2" >> $GITHUB_PATH
 
-      # 3. Verify that aidl is correctly found (should output a path and version).
+      # 4. Verify aidl is the correct one (check the path and a safe command)
       - name: Verify aidl
-        run: which aidl && aidl --version
+        run: |
+          which aidl
+          # Use --help instead of --version to check it runs
+          aidl --help > /dev/null
+          echo "aidl is working correctly"
 
       - name: System deps
         run: |
@@ -50,7 +59,6 @@ jobs:
           path: ~/.buildozer
           key: bz-${{ hashFiles('buildozer.spec') }}
 
-      # 4. Auto-accept licenses and build.
       - name: Build
         run: echo y | buildozer -v android debug
 
