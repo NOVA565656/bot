@@ -19,13 +19,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 1. Install Android SDK packages
       - name: Install Android SDK packages
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      # 2. Add build-tools directory to PATH
       - name: Add build-tools to PATH
         run: echo "$ANDROID_HOME/build-tools/33.0.2" >> $GITHUB_PATH
 
@@ -36,7 +34,6 @@ jobs:
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev lib32stdc++6 lib32z1
 
-      # ✅ 3. SET UP VIRTUAL ENVIRONMENT (Isolates pip and fixes the conflict)
       - name: Set up build environment
         run: |
           python -m venv .venv
@@ -44,20 +41,20 @@ jobs:
           python -m pip install --upgrade pip==23.3.2 setuptools==69.5.1 wheel==0.43.0
           python -m pip install buildozer==1.5.0 cython==3.0.12
 
-      # 4. Cache buildozer (Bumped to v6 to force a clean slate)
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: bz-v6-${{ hashFiles('buildozer.spec') }}
+          key: bz-v7-${{ hashFiles('buildozer.spec') }}
 
-      # ✅ 5. BUILD WITH PYTHONNOUSERSITE
       - name: Build
         env:
-          PYTHONNOUSERSITE: "1" # Tells Python to ignore the ~/.local folder entirely
+          PYTHONNOUSERSITE: "1"
         run: |
           . .venv/bin/activate
           unset PYTHONPATH
+          # Force a clean build directory to avoid packaging cache issues
+          rm -rf .buildozer
           echo y | buildozer -v android debug
 
       - uses: actions/upload-artifact@v4
