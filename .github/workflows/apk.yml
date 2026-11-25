@@ -19,29 +19,19 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 1. Remove any conflicting system-wide aidl packages
-      - name: Remove system aidl packages
-        run: |
-          sudo apt-get remove -y aidl || true
-          sudo apt-get autoremove -y || true
-
-      # 2. Install the required Android SDK packages
+      # 1. Install Android SDK packages
       - name: Install Android SDK packages
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      # 3. Add the build-tools directory to PATH
+      # 2. Add build-tools directory to PATH
       - name: Add build-tools to PATH
         run: echo "$ANDROID_HOME/build-tools/33.0.2" >> $GITHUB_PATH
 
-      # 4. Verify aidl is the correct one (check the path and a safe command)
+      # 3. Verify aidl
       - name: Verify aidl
-        run: |
-          which aidl
-          # Use --help instead of --version to check it runs
-          aidl --help > /dev/null
-          echo "aidl is working correctly"
+        run: which aidl
 
       - name: System deps
         run: |
@@ -50,15 +40,17 @@ jobs:
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev lib32stdc++6 lib32z1
 
+      # 4. Install buildozer (PINNED TO STABLE VERSIONS)
       - name: Install buildozer
-        run: pip install --user buildozer cython
+        run: pip install --user buildozer==1.5.0 cython==0.29.36
 
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: bz-${{ hashFiles('buildozer.spec') }}
+          key: bz-v3-${{ hashFiles('buildozer.spec') }}
 
+      # 5. Build
       - name: Build
         run: echo y | buildozer -v android debug
 
