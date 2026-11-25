@@ -36,21 +36,29 @@ jobs:
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev lib32stdc++6 lib32z1
 
-      # ✅ 3. PIN PIP, SETUPTOOLS, AND BUILD TOOLS to prevent the open_rich_spinner error
-      - name: Install build tools
+      # ✅ 3. SET UP VIRTUAL ENVIRONMENT (Isolates pip and fixes the conflict)
+      - name: Set up build environment
         run: |
-          python -m pip install --user --upgrade pip==23.3.2 setuptools==69.5.1 wheel==0.43.0
-          python -m pip install --user buildozer==1.5.0 cython==3.0.12
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip==23.3.2 setuptools==69.5.1 wheel==0.43.0
+          python -m pip install buildozer==1.5.0 cython==3.0.12
 
-      # ✅ 4. Changed cache key to v5 to force a completely clean build environment
+      # 4. Cache buildozer (Bumped to v6 to force a clean slate)
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: bz-v5-${{ hashFiles('buildozer.spec') }}
+          key: bz-v6-${{ hashFiles('buildozer.spec') }}
 
+      # ✅ 5. BUILD WITH PYTHONNOUSERSITE
       - name: Build
-        run: echo y | buildozer -v android debug
+        env:
+          PYTHONNOUSERSITE: "1" # Tells Python to ignore the ~/.local folder entirely
+        run: |
+          . .venv/bin/activate
+          unset PYTHONPATH
+          echo y | buildozer -v android debug
 
       - uses: actions/upload-artifact@v4
         with:
