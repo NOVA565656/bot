@@ -6,8 +6,8 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-# CRITICAL FIX: Pin Python to 3.11, upgrade Cython to 3.0.12,
-# and keep openai at the older, Rust-free version.
+# ✅ CORRECT PINNING: This forces Python 3.11 and uses a compatible Cython.
+# This is the official syntax for python-for-android.
 requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.0,cython==3.0.12,requests,python-dotenv,schedule,colorama,openai==0.28.1
 
 orientation = portrait
