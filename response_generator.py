@@ -1,10 +1,6 @@
 import os
 import random
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 TONE_INSTRUCTIONS = """
 You are a friendly Nigerian entrepreneur who helps people start online side hustles.
@@ -13,11 +9,38 @@ Use expressions like: "How far", "Abeg", "Omo", "Sha", "Wahala", "No worry", "Ch
 Be warm, encouraging, and conversational.
 """
 
-def generate_dm_response(comment_text, author_username, conversation_history=None):
-    """
-    Generate reply that naturally leads to DM conversation
-    """
-    
+DM_WORDS = ["dm", "direct message", "inbox", "message me", "send message", "check your dm"]
+
+def _client():
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        return None
+    try:
+        return OpenAI(api_key=key)
+    except Exception:
+        return None
+
+
+def _fallback(comment_text, author):
+    c = comment_text.lower()
+    if "how" in c or "start" in c:
+        return f"How far @{author}! I see say you wan start. Send DM abeg, I go show you step by step. No charge! \U0001F4E9"
+    if "money" in c or "pay" in c:
+        return f"@{author} Omo, I dey make am daily! Send DM make I show you the platform. No scam, just hustle! \U0001F4B0\U0001F4E9"
+    if "help" in c or "please" in c:
+        return f"@{author} No worry, I got you! Send DM, I go guide you. Make we chop this money together! \U0001F91D\U0001F4E9"
+    return random.choice([
+        f"How far @{author}! I like your energy. Send DM make I show you how I dey do am! \U0001F4E9",
+        f"@{author} Omo, you sabi! Check your DM, I wan share something with you! \U0001F525\U0001F4E9",
+        f"@{author} DM abeg! I get something wey fit help you. No wahala! \U0001F4E9",
+    ])
+
+
+def generate_dm_response(comment_text, author_username):
+    client = _client()
+    if client is None:
+        return _fallback(comment_text, author_username)
+
     prompt = f"""You are replying to a TikTok comment from someone interested in making money online.
 
 Comment from @{author_username}: "{comment_text}"
@@ -25,50 +48,23 @@ Comment from @{author_username}: "{comment_text}"
 {TONE_INSTRUCTIONS}
 
 Craft a reply that:
-1. Acknowledges their specific interest/question PERSONALLY (show you read their comment)
-2. Gives a small teaser of value (1 sentence max) - make them curious
-3. Naturally invites them to DM for details (e.g., "Send DM make I show you", "DM abeg, too long for here", "Check DM, I don send you tips")
-4. Keep it under 2 sentences total
-5. MUST include a soft DM invitation - this is critical
-
-Examples of good DM invitations:
-- "Send DM, I get the full guide"
-- "DM abeg, I wan explain better"
-- "Check your DM, I don send am"
-- "Too long to explain here, send DM"
+1. Acknowledges their specific interest/question personally
+2. Gives one short teaser that makes them curious
+3. Invites them to DM for details
+Keep it under 2 sentences. The DM invite is mandatory.
 
 Reply:"""
-    
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        r = client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=120,
-            temperature=0.9
+            temperature=0.9,
         )
-        reply = response.choices[0].message.content.strip()
-        
-        # Ensure it mentions DM if AI forgot
-        dm_keywords = ['dm', 'direct message', 'inbox', 'message me', 'send message']
-        if not any(kw in reply.lower() for kw in dm_keywords):
-            reply += " Send DM make I show you the way! 📩"
-            
+        reply = r.choices[0].message.content.strip()
+        if not any(w in reply.lower() for w in DM_WORDS):
+            reply += " Send DM make I show you the way! \U0001F4E9"
         return reply
-        
-    except Exception as e:
-        # Smart fallback based on comment type
-        comment_lower = comment_text.lower()
-        
-        if 'how' in comment_lower or 'start' in comment_lower:
-            return f"How far @{author_username}! I see say you wan start. Send DM abeg, I go show you step by step. No charge! 📩"
-        elif 'money' in comment_lower or 'pay' in comment_lower:
-            return f"@{author_username} Omo, I dey make am daily! Send DM make I show you the platform. No scam, just hustle! 💰📩"
-        elif 'help' in comment_lower or 'please' in comment_lower:
-            return f"@{author_username} No worry, I got you! Send DM, I go guide you. Make we chop this money together! 🤝📩"
-        else:
-            fallbacks = [
-                f"How far @{author_username}! I like your energy. Send DM make I show you how I dey do am! 📩",
-                f"@{author_username} Omo, you sabi! Check your DM, I wan share something with you! 🔥📩",
-                f"@{author_username} DM abeg! I get something wey fit help you. No wahala! 📩"
-            ]
-            return random.choice(fallbacks)
+    except Exception:
+        return _fallback(comment_text, author_username)
