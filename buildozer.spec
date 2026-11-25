@@ -6,27 +6,27 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-# BUG FIX 1: Pinned openai to an older version that doesn't require Rust to compile
-requirements = python3,kivy,requests,openai==0.28.1,python-dotenv,schedule,colorama
+# 🔒 CRITICAL: Pin Cython to a known stable version for p4a
+# and use the older OpenAI version that doesn't need Rust
+requirements = python3,kivy==2.3.0,cython==0.29.36,requests,python-dotenv,schedule,colorama,openai==0.28.1
 
 orientation = portrait
 android.permissions = INTERNET
 
-# Android SDK settings
+# Android SDK/NDK settings
 android.api = 33
 android.minapi = 21
-
-# BUG FIX 2: Added ndk_api to prevent compilation crashes
 android.ndk_api = 24
 
+# 🔒 CRITICAL: Force the stable NDK (r25b) that p4a is tested against
+android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
-
-# BUG FIX 3: Moved build_tools_version into the [app] section where it belongs
 android.build_tools_version = 33.0.2
-
-# BUG FIX 4: Automatically accept licenses so the build doesn't pause
 android.accept_sdk_license = True
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
+
+# Optional: Try switching to the develop branch of p4a if master is failing
+# p4a.branch = develop
