@@ -52,14 +52,17 @@ def _gemini(key, prompt):
     return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 def _openai(key, prompt):
-    from openai import OpenAI
-    r = OpenAI(api_key=key).chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=120,
-        temperature=0.9,
+    r = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={"model": "gpt-4o-mini",
+              "messages": [{"role": "user", "content": prompt}],
+              "max_tokens": 120,
+              "temperature": 0.9},
+        timeout=30,
     )
-    return r.choices[0].message.content.strip()
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"].strip()
 
 def generate_dm_response(comment_text, author_username):
     key = os.getenv("BOT_API_KEY", "").strip()
