@@ -1,28 +1,26 @@
 import os
 import random
-from openai import OpenAI
+import requests
 
-TONE_INSTRUCTIONS = """
+TONE = """
 You are a friendly Nigerian entrepreneur who helps people start online side hustles.
-Respond in Nigerian Pidgin English mixed with standard English.
-Use expressions like: "How far", "Abeg", "Omo", "Sha", "Wahala", "No worry", "Chill".
-Be warm, encouraging, and conversational.
+Reply in Nigerian Pidgin English mixed with standard English.
+Use expressions like: "How far", "Abeg", "Omo", "Sha", "No worry", "Chill".
+Warm, encouraging, conversational.
 """
 
-DM_WORDS = ["dm", "direct message", "inbox", "message me", "send message", "check your dm"]
+DM_WORDS = ["dm", "direct message", "inbox", "message me", "send message"]
 
-def _client():
-    key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not key:
-        return None
-    try:
-        return OpenAI(api_key=key)
-    except Exception:
-        return None
+def provider():
+    k = os.getenv("BOT_API_KEY", "").strip()
+    if k.startswith("AIza"):
+        return "gemini"
+    if k.startswith("sk-"):
+        return "openai"
+    return "none"
 
-
-def _fallback(comment_text, author):
-    c = comment_text.lower()
+def _fallback(text, author):
+    c = text.lower()
     if "how" in c or "start" in c:
         return f"How far @{author}! I see say you wan start. Send DM abeg, I go show you step by step. No charge! \U0001F4E9"
     if "money" in c or "pay" in c:
@@ -35,36 +33,45 @@ def _fallback(comment_text, author):
         f"@{author} DM abeg! I get something wey fit help you. No wahala! \U0001F4E9",
     ])
 
+def _prompt(comment, author):
+    return f"""Reply to this TikTok comment from someone interested in making money online.
+
+Comment from @{author}: "{comment}"
+
+{TONE}
+
+Rules: acknowledge their point, one short curiosity teaser, invite them to DM. Max 2 sentences. DM invite mandatory."""
+
+def _gemini(key, prompt):
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           f"gemini-2.5-flash:generateContent?key={key}")
+    body = {"contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.9, "maxOutputTokens": 200}}
+    r = requests.post(url, json=body, timeout=30)
+    r.raise_for_status()
+    return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+def _openai(key, prompt):
+    from openai import OpenAI
+    r = OpenAI(api_key=key).chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=120,
+        temperature=0.9,
+    )
+    return r.choices[0].message.content.strip()
 
 def generate_dm_response(comment_text, author_username):
-    client = _client()
-    if client is None:
+    key = os.getenv("BOT_API_KEY", "").strip()
+    p = provider()
+    if p == "none":
         return _fallback(comment_text, author_username)
-
-    prompt = f"""You are replying to a TikTok comment from someone interested in making money online.
-
-Comment from @{author_username}: "{comment_text}"
-
-{TONE_INSTRUCTIONS}
-
-Craft a reply that:
-1. Acknowledges their specific interest/question personally
-2. Gives one short teaser that makes them curious
-3. Invites them to DM for details
-Keep it under 2 sentences. The DM invite is mandatory.
-
-Reply:"""
-
     try:
-        r = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=120,
-            temperature=0.9,
-        )
-        reply = r.choices[0].message.content.strip()
-        if not any(w in reply.lower() for w in DM_WORDS):
-            reply += " Send DM make I show you the way! \U0001F4E9"
-        return reply
-    except Exception:
+        raw = _gemini(key, _prompt(comment_text, author_username)) if p == "gemini" \
+              else _openai(key, _prompt(comment_text, author_username))
+        if not any(w in raw.lower() for w in DM_WORDS):
+            raw += " Send DM make I show you the way! \U0001F4E9"
+        return raw
+    except Exception as e:
+        print(f"[ai] {e}")
         return _fallback(comment_text, author_username)
