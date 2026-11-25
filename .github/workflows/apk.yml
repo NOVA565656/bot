@@ -29,10 +29,6 @@ jobs:
       - name: Add build-tools to PATH
         run: echo "$ANDROID_HOME/build-tools/33.0.2" >> $GITHUB_PATH
 
-      # 3. Verify aidl
-      - name: Verify aidl
-        run: which aidl
-
       - name: System deps
         run: |
           sudo apt-get update
@@ -40,17 +36,19 @@ jobs:
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev lib32stdc++6 lib32z1
 
-      # 4. Install buildozer (PINNED TO STABLE VERSIONS)
-      - name: Install buildozer
-        run: pip install --user buildozer==1.5.0 cython==0.29.36
+      # ✅ 3. PIN PIP, SETUPTOOLS, AND BUILD TOOLS to prevent the open_rich_spinner error
+      - name: Install build tools
+        run: |
+          python -m pip install --user --upgrade pip==23.3.2 setuptools==69.5.1 wheel==0.43.0
+          python -m pip install --user buildozer==1.5.0 cython==3.0.12
 
+      # ✅ 4. Changed cache key to v5 to force a completely clean build environment
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: bz-v3-${{ hashFiles('buildozer.spec') }}
+          key: bz-v5-${{ hashFiles('buildozer.spec') }}
 
-      # 5. Build
       - name: Build
         run: echo y | buildozer -v android debug
 
