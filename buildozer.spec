@@ -12,8 +12,8 @@ requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,
 orientation = portrait
 android.permissions = INTERNET
 
-# ✅ Android SDK/NDK settings matched to fix the packaging error
-android.api = 28
+# ✅ FIX: Set api back to 33 (for modern Java), keep minapi 21 (for your phone)
+android.api = 33
 android.minapi = 21
 android.ndk_api = 21
 android.ndk = 25b
