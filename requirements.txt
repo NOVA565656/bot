@@ -4,4 +4,5 @@ requests
 python-dotenv
 schedule
 colorama
-TikTokSigner
+tiktok-signer==1.4.0
+pycryptodome==3.19.1
