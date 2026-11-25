@@ -6,8 +6,8 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-# ✅ openai removed completely to prevent Rust/Pydantic build failures
-requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama,tiktoksigner
+# ✅ Corrected package name (hyphen) and added pycryptodome
+requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama,tiktok-signer==1.4.0,pycryptodome==3.19.1
 
 orientation = portrait
 android.permissions = INTERNET
