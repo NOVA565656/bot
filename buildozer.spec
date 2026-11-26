@@ -6,11 +6,10 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-# ✅ Added pyjnius for the WebView, kept tiktoksigner OUT
-requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama,pyjnius
+requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,pyjnius,requests,python-dotenv,schedule,colorama
 
 orientation = portrait
-android.permissions = INTERNET
+android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
 android.api = 33
 android.minapi = 21
