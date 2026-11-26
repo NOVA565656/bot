@@ -1,13 +1,14 @@
 [app]
 title = TikTok Bot
-package.name = tiktokbot
+# Changed to bypass any old installation conflicts
+package.name = tiktokbot2 
 package.domain = com.nova
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-# ✅ Corrected package name (hyphen) and added pycryptodome
-requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama,tiktok-signer==1.4.0,pycryptodome==3.19.1
+# Keep these! They fixed the build.
+requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama
 
 orientation = portrait
 android.permissions = INTERNET
@@ -18,7 +19,9 @@ android.minapi = 21
 android.ndk_api = 21
 android.ndk = 25b
 
-android.archs = arm64-v8a 
+# FIXED: Building for BOTH 32-bit and 64-bit phones
+android.archs = arm64-v8a, armeabi-v7a 
+
 android.build_tools_version = 33.0.2
 android.accept_sdk_license = True
 
