@@ -6,7 +6,8 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,html,txt,json
 version = 1.0.0
 
-requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama
+# ✅ Added pyjnius for the WebView, kept tiktoksigner OUT
+requirements = python3==3.11.16,hostpython3==3.11.16,kivy==2.3.1,cython==3.0.12,requests,python-dotenv,schedule,colorama,pyjnius
 
 orientation = portrait
 android.permissions = INTERNET
@@ -16,9 +17,7 @@ android.minapi = 21
 android.ndk_api = 21
 android.ndk = 25b
 
-# ✅ TARGETING YOUR 32-BIT PHONE ONLY
 android.archs = armeabi-v7a 
-
 android.build_tools_version = 33.0.2
 android.accept_sdk_license = True
 
