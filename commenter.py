@@ -12,7 +12,6 @@ PUBLISH = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/comment/publish/
 
 
 def post_comment(video_id, comment_text, session_id):
-    # ✅ FIX: Handle both the new full WebView cookie and the old manual sessionid
     if "=" in session_id:
         cookie_str = session_id
     else:
