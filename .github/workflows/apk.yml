@@ -38,23 +38,22 @@ jobs:
         run: |
           python -m venv .venv
           . .venv/bin/activate
-          python -m pip install --upgrade pip==23.3.2 setuptools==69.5.1 wheel==0.43.0
-          python -m pip install buildozer==1.5.0 cython==3.0.12
+          python -m pip install --upgrade "pip==23.3.2" "setuptools==69.5.1" "wheel==0.43.0"
+          python -m pip install "buildozer==1.5.0" "cython==3.0.12"
 
-      - name: Cache buildozer
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: bz-v7-${{ hashFiles('buildozer.spec') }}
-
+      # ✅ NO CACHE STEP. PURE CLEAN BUILD.
+      
       - name: Build
         env:
           PYTHONNOUSERSITE: "1"
+          PIP_NO_CACHE_DIR: "1" # Forces pip to ignore all downloaded files
         run: |
           . .venv/bin/activate
           unset PYTHONPATH
-          # Force a clean build directory to avoid packaging cache issues
+          # Nuke ANY leftover build directories
+          rm -rf ~/.buildozer
           rm -rf .buildozer
+          
           echo y | buildozer -v android debug
 
       - uses: actions/upload-artifact@v4
