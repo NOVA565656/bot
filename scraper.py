@@ -11,8 +11,14 @@ def _tok(n=32):
     return "".join(random.choice(string.ascii_letters + string.digits) for _ in range(n))
 
 def _h(session_id):
-    return {"User-Agent": UA, "Accept": "application/json",
-            "Cookie": f"sessionid={session_id}; msToken={_tok(100)}"}
+    # ✅ FIX: If it's a full cookie string from the WebView, use it as-is.
+    # Otherwise, it's a manual sessionid, so format it properly.
+    if "=" in session_id:
+        cookie_str = session_id
+    else:
+        cookie_str = f"sessionid={session_id}; msToken={_tok(100)}"
+        
+    return {"User-Agent": UA, "Accept": "application/json", "Cookie": cookie_str}
 
 def _get(path, params, session_id):
     q = sign_query(path, params, UA)
