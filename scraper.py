@@ -11,8 +11,6 @@ def _tok(n=32):
     return "".join(random.choice(string.ascii_letters + string.digits) for _ in range(n))
 
 def _h(session_id):
-    # ✅ FIX: If it's a full cookie string from the WebView, use it as-is.
-    # Otherwise, it's a manual sessionid, so format it properly.
     if "=" in session_id:
         cookie_str = session_id
     else:
