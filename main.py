@@ -97,7 +97,7 @@ class Root(BoxLayout):
         # API CARD
         api_card = Card(orientation="vertical", size_hint_y=None, height=dp(160))
         api_card.add_widget(Label(text="API Configuration", size_hint_y=None, height=dp(20), bold=True, color=(0.8, 0.8, 0.8, 1)))
-        self.key_in = ModernInput(hint_text="API key (sk-... or AIza...)", password=True, size_hint_y=None, height=dp(45))
+        self.key_in = ModernInput(hint_text="Paste API Key here...", password=True, size_hint_y=None, height=dp(45))
         self.key_in.text = get_setting("api_key")
         api_card.add_widget(self.key_in)
 
@@ -111,7 +111,7 @@ class Root(BoxLayout):
         scroll_layout.add_widget(api_card)
 
         # ACCOUNT CARD
-        acc_card = Card(orientation="vertical", size_hint_y=None, height=dp(340)) # Made taller for the new button
+        acc_card = Card(orientation="vertical", size_hint_y=None, height=dp(340))
         acc_card.add_widget(Label(text="Account Details", size_hint_y=None, height=dp(20), bold=True, color=(0.8, 0.8, 0.8, 1)))
         
         self.name_in = ModernInput(hint_text="Account label (e.g. MyAccount1)", size_hint_y=None, height=dp(45))
@@ -125,9 +125,8 @@ class Root(BoxLayout):
         save_acc_btn.bind(on_release=lambda *a: self.save_account())
         acc_card.add_widget(save_acc_btn)
         
-        # ✅ THE NEW WEBVIEW BUTTON
         web_login_btn = RoundedButton(text="Add Account via Web Login", bg_color=(0.6, 0.2, 0.8, 1), size_hint_y=None, height=dp(45))
-        web_login_btn.bind(on_release=lambda *a: open_login(self.on_captured))
+        web_login_btn.bind(on_release=lambda *a: self.open_web_login())
         acc_card.add_widget(web_login_btn)
         
         scroll_layout.add_widget(acc_card)
@@ -162,8 +161,9 @@ class Root(BoxLayout):
 
     def save_key(self):
         k = self.key_in.text.strip()
-        if not (k.startswith("sk-") or k.startswith("AIza")):
-            self.say("Key must start with sk- or AIza"); return
+        # ✅ VALIDATION REMOVED: Accepts any key
+        if not k: 
+            self.say("Key cannot be empty"); return
         set_setting("api_key", k)
         os.environ["BOT_API_KEY"] = k
         self.refresh_provider()
@@ -176,7 +176,10 @@ class Root(BoxLayout):
         self.say("Account saved manually")
         self.name_in.text = self.user_in.text = self.sess_in.text = ""
 
-    # ✅ NEW FUNCTION FOR WEBVIEW CAPTURE
+    def open_web_login(self):
+        self.say("Opening TikTok Login...")
+        open_login(self.on_captured)
+
     def on_captured(self, cookie):
         if "sessionid=" not in cookie:
             self.say("No sessionid found - log in fully, then tap SAVE")
