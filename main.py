@@ -10,7 +10,6 @@ from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp, sp
 from kivy.core.window import Window
 
-# Import the WebView module
 from webview_login import open_login
 
 import database as db
@@ -161,7 +160,6 @@ class Root(BoxLayout):
 
     def save_key(self):
         k = self.key_in.text.strip()
-        # ✅ VALIDATION REMOVED: Accepts any key
         if not k: 
             self.say("Key cannot be empty"); return
         set_setting("api_key", k)
@@ -181,6 +179,11 @@ class Root(BoxLayout):
         open_login(self.on_captured)
 
     def on_captured(self, cookie):
+        # ✅ NEW: Catch WebView errors and show them on screen
+        if cookie.startswith("ERROR:"):
+            self.say(f"WebView Error: {cookie[6:]}")
+            return
+            
         if "sessionid=" not in cookie:
             self.say("No sessionid found - log in fully, then tap SAVE")
             return
