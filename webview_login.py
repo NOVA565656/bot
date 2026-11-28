@@ -7,10 +7,12 @@ WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')
 CookieManager = autoclass('android.webkit.CookieManager')
 Dialog = autoclass('android.app.Dialog')
-WindowManager = autoclass('android.view.WindowManager')
-LinearLayout = autoclass('android.widget.LinearLayout')
+FrameLayout = autoclass('android.widget.FrameLayout')
+FrameLayoutParams = autoclass('android.widget.FrameLayout$LayoutParams')
 Button = autoclass('android.widget.Button')
 Color = autoclass('android.graphics.Color')
+Gravity = autoclass('android.view.Gravity')
+Window = autoclass('android.view.Window')
 
 _keep_refs = {}
 
@@ -25,9 +27,11 @@ class Runnable(PythonJavaClass):
         try:
             self.func()
         except Exception:
-            Clock.schedule_once(lambda dt: self.on_error(traceback.format_exc()), 0)
+            err = traceback.format_exc()
+            if "NoneType: None" in err:
+                err = "JNI Bridge Error (Check method signatures or arguments)."
+            Clock.schedule_once(lambda dt: self.on_error(err), 0)
 
-# ✅ FIX: Correct listener for a standard Button (View.OnClickListener)
 class ButtonListener(PythonJavaClass):
     __javainterfaces__ = ['android/view/View$OnClickListener']
     def __init__(self, callback):
@@ -39,8 +43,15 @@ class ButtonListener(PythonJavaClass):
 
 class MyWebViewClient(PythonJavaClass):
     __javainterfaces__ = ['android/webkit/WebViewClient']
+    
+    # For Android < 7.0
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)Z')
     def shouldOverrideUrlLoading(self, view, url):
+        return False
+        
+    # ✅ FIX: For Android 7.0+ (Your phone is Android 9)
+    @java_method('(Landroid/webkit/WebView;Landroid/webkit/WebResourceRequest;)Z')
+    def shouldOverrideUrlLoading(self, view, request):
         return False
 
 def open_login(on_captured):
@@ -48,15 +59,16 @@ def open_login(on_captured):
         on_captured(f"ERROR: {msg}")
 
     def _open():
-        # Create Dialog (Bypasses theme crashes)
+        # 1. Create Dialog
         dialog = Dialog(PythonActivity.mActivity)
-        dialog.requestWindowFeature(1) # Window.FEATURE_NO_TITLE
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE) # Remove title bar
         _keep_refs['dialog'] = dialog
 
-        layout = LinearLayout(PythonActivity.mActivity)
-        layout.setOrientation(1) # Vertical
+        # 2. Create Layout (Using FrameLayout - much simpler than LinearLayout)
+        layout = FrameLayout(PythonActivity.mActivity)
         layout.setBackgroundColor(Color.parseColor("#1E1E24"))
 
+        # 3. Create WebView
         web = WebView(PythonActivity.mActivity)
         web.getSettings().setJavaScriptEnabled(True)
         web.getSettings().setDomStorageEnabled(True)
@@ -70,10 +82,11 @@ def open_login(on_captured):
         web.loadUrl("https://www.tiktok.com/login")
         _keep_refs['web'] = web
 
-        # Add WebView (weight 1 makes it fill screen)
-        lp_web = LinearLayout.LayoutParams(-1, 0, 1.0)
+        # Add WebView to fill the screen (MATCH_PARENT = -1)
+        lp_web = FrameLayoutParams(-1, -1)
         layout.addView(web, lp_web)
 
+        # 4. Create Save Button
         btn = Button(PythonActivity.mActivity)
         btn.setText("SAVE & CLOSE")
         btn.setBackgroundColor(Color.parseColor("#FE2C55"))
@@ -89,16 +102,20 @@ def open_login(on_captured):
         _keep_refs['listener'] = listener
         btn.setOnClickListener(listener)
 
-        lp_btn = LinearLayout.LayoutParams(-1, -2)
+        # Put button at the bottom (WRAP_CONTENT = -2)
+        lp_btn = FrameLayoutParams(-1, -2)
+        lp_btn.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         lp_btn.setMargins(50, 50, 50, 50)
         layout.addView(btn, lp_btn)
 
+        # 5. Show Dialog
         dialog.setContentView(layout)
         dialog.show()
 
+        # 6. Force Fullscreen Dialog
         window = dialog.getWindow()
         if window:
-            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+            window.setLayout(-1, -1) # MATCH_PARENT for both width and height
 
     runnable = Runnable(_open, _error)
     _keep_refs['runnable'] = runnable
