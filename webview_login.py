@@ -1,32 +1,40 @@
 from jnius import autoclass, PythonJavaClass, java_method
 from kivy.clock import Clock
+import traceback
 
 PythonActivity = autoclass('org.kivy.android.PythonActivity')
 WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')
 CookieManager = autoclass('android.webkit.CookieManager')
-AlertDialog = autoclass('android.app.AlertDialog')
+Dialog = autoclass('android.app.Dialog')
 WindowManager = autoclass('android.view.WindowManager')
+LinearLayout = autoclass('android.widget.LinearLayout')
+Button = autoclass('android.widget.Button')
+Color = autoclass('android.graphics.Color')
 
-# ✅ Keep references in memory so Python GC doesn't delete them (prevents instant crash)
 _keep_refs = {}
 
 class Runnable(PythonJavaClass):
     __javainterfaces__ = ['java/lang/Runnable']
-    def __init__(self, func):
+    def __init__(self, func, on_error):
         super().__init__()
         self.func = func
+        self.on_error = on_error
     @java_method('()V')
     def run(self):
-        self.func()
+        try:
+            self.func()
+        except Exception:
+            Clock.schedule_once(lambda dt: self.on_error(traceback.format_exc()), 0)
 
-class DialogListener(PythonJavaClass):
-    __javainterfaces__ = ['android/content/DialogInterface$OnClickListener']
+# ✅ FIX: Correct listener for a standard Button (View.OnClickListener)
+class ButtonListener(PythonJavaClass):
+    __javainterfaces__ = ['android/view/View$OnClickListener']
     def __init__(self, callback):
         super().__init__()
         self.callback = callback
-    @java_method('(Landroid/content/DialogInterface;I)V')
-    def onClick(self, dialog, which):
+    @java_method('(Landroid/view/View;)V')
+    def onClick(self, view):
         self.callback()
 
 class MyWebViewClient(PythonJavaClass):
@@ -36,55 +44,62 @@ class MyWebViewClient(PythonJavaClass):
         return False
 
 def open_login(on_captured):
-    def _open():
-        try:
-            activity = PythonActivity.mActivity
-            
-            web = WebView(activity)
-            web.getSettings().setJavaScriptEnabled(True)
-            web.getSettings().setDomStorageEnabled(True)
-            web.getSettings().setDatabaseEnabled(True)
-            web.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36")
-            
-            # ✅ Prevent redirect crashes
-            client = MyWebViewClient()
-            web.setWebViewClient(client)
-            _keep_refs['client'] = client
-            
-            web.loadUrl("https://www.tiktok.com/login")
-            
-            builder = AlertDialog.Builder(activity)
-            builder.setTitle("Log in to TikTok")
-            builder.setView(web)
-            
-            def save_click():
-                cm = CookieManager.getInstance()
-                cookie = cm.getCookie("https://www.tiktok.com") or ""
-                Clock.schedule_once(lambda dt: on_captured(cookie), 0)
-                
-            save_listener = DialogListener(save_click)
-            _keep_refs['listener'] = save_listener # ✅ Keep listener in memory
-            
-            builder.setPositiveButton("SAVE & CLOSE", save_listener)
-            builder.setNegativeButton("CANCEL", None) 
-            
-            dialog = builder.create()
-            _keep_refs['dialog'] = dialog # ✅ Keep dialog in memory
-            _keep_refs['web'] = web       # ✅ Keep webview in memory
-            
-            dialog.show()
-            
-            window = dialog.getWindow()
-            if window:
-                window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
-                
-        except Exception as e:
-            # If it fails, send the error to Kivy instead of crashing
-            Clock.schedule_once(lambda dt: on_captured(f"ERROR: {e}"), 0)
+    def _error(msg):
+        on_captured(f"ERROR: {msg}")
 
-    # ✅ Keep the runnable in memory
-    runnable = Runnable(_open)
+    def _open():
+        # Create Dialog (Bypasses theme crashes)
+        dialog = Dialog(PythonActivity.mActivity)
+        dialog.requestWindowFeature(1) # Window.FEATURE_NO_TITLE
+        _keep_refs['dialog'] = dialog
+
+        layout = LinearLayout(PythonActivity.mActivity)
+        layout.setOrientation(1) # Vertical
+        layout.setBackgroundColor(Color.parseColor("#1E1E24"))
+
+        web = WebView(PythonActivity.mActivity)
+        web.getSettings().setJavaScriptEnabled(True)
+        web.getSettings().setDomStorageEnabled(True)
+        web.getSettings().setDatabaseEnabled(True)
+        web.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36")
+        
+        client = MyWebViewClient()
+        web.setWebViewClient(client)
+        _keep_refs['client'] = client
+
+        web.loadUrl("https://www.tiktok.com/login")
+        _keep_refs['web'] = web
+
+        # Add WebView (weight 1 makes it fill screen)
+        lp_web = LinearLayout.LayoutParams(-1, 0, 1.0)
+        layout.addView(web, lp_web)
+
+        btn = Button(PythonActivity.mActivity)
+        btn.setText("SAVE & CLOSE")
+        btn.setBackgroundColor(Color.parseColor("#FE2C55"))
+        btn.setTextColor(Color.parseColor("#FFFFFF"))
+
+        def do_save():
+            cm = CookieManager.getInstance()
+            cookie = cm.getCookie("https://www.tiktok.com") or ""
+            dialog.dismiss()
+            Clock.schedule_once(lambda dt: on_captured(cookie), 0)
+
+        listener = ButtonListener(do_save)
+        _keep_refs['listener'] = listener
+        btn.setOnClickListener(listener)
+
+        lp_btn = LinearLayout.LayoutParams(-1, -2)
+        lp_btn.setMargins(50, 50, 50, 50)
+        layout.addView(btn, lp_btn)
+
+        dialog.setContentView(layout)
+        dialog.show()
+
+        window = dialog.getWindow()
+        if window:
+            window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+
+    runnable = Runnable(_open, _error)
     _keep_refs['runnable'] = runnable
-    
-    activity = PythonActivity.mActivity
-    activity.runOnUiThread(runnable)
+    PythonActivity.mActivity.runOnUiThread(runnable)
